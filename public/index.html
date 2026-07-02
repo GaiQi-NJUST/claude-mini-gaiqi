@@ -917,6 +917,9 @@ select option { background: var(--surface-1); color: var(--text-primary); }
         <button class="icon-btn" id="btn-settings" aria-label="设置" title="设置">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
+        <button class="icon-btn" id="btn-export" aria-label="导出对话" title="导出对话">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
         <button class="icon-btn" id="btn-clear" aria-label="新建对话" title="新建对话">
           <svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M3 12h18"/></svg>
         </button>
@@ -1639,18 +1642,44 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     if (state.messages.length === 0) { toast('无内容可导出'); return; }
     let md = '# Claude Mobile 对话记录\n\n';
     md += `> 导出时间: ${new Date().toLocaleString('zh-CN')}\n`;
-    md += `> 模型: ${$modelLabel.textContent}\n\n---\n\n`;
+    md += `> 模型: ${$modelLabel.textContent}\n`;
+    md += `> 消息数: ${state.messages.length} 条\n\n---\n\n`;
     state.messages.forEach(m => {
       const role = m.role === 'user' ? '🧑 You' : '🤖 Claude';
       const time = fmtTime(m.time);
       md += `### ${role} — ${time}\n\n${m.content}\n\n---\n\n`;
     });
+
+    // Try Web Share API first (mobile-friendly)
+    const filename = `claude-chat-${new Date().toISOString().slice(0,10)}.md`;
     const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const file = new File([blob], filename, { type: 'text/markdown' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        files: [file],
+        title: '导出对话记录',
+      }).then(() => toast('已分享')).catch(() => fallbackDownload(blob, filename));
+    } else {
+      fallbackDownload(blob, filename);
+    }
+  }
+
+  function fallbackDownload(blob, filename) {
+    // Also copy to clipboard as text
+    const reader = new FileReader();
+    reader.onload = () => {
+      navigator.clipboard.writeText(reader.result).then(() => {
+        toast('已复制到剪贴板 + 已下载');
+      }).catch(() => {});
+    };
+    reader.readAsText(blob);
+
+    // Download via anchor
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `claude-chat-${new Date().toISOString().slice(0,10)}.md`;
+    a.href = url; a.download = filename;
     a.click(); URL.revokeObjectURL(url);
-    toast('已导出 Markdown 文件');
   }
 
   // ── Render ───────────────────────────────────
@@ -2094,6 +2123,7 @@ const CHANGELOG = [
       pushUndoSnapshot(); saveCurrentConv(); createNewConversation();
     }
   });
+  $('#btn-export').addEventListener('click', exportConversation);
   $('#btn-skills').addEventListener('click', openSkills);
   $('#btn-close-skills').addEventListener('click', closeSkills);
   $('#skills-backdrop').addEventListener('click', closeSkills);
