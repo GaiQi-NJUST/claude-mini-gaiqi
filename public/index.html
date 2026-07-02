@@ -9,7 +9,7 @@
 <title>Claude Mobile</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 <style>
@@ -21,21 +21,23 @@
    ============================================ */
 
 :root {
-  --surface-root:   #0f0e0e;
-  --surface-1:      #1a1817;
-  --surface-2:      #242120;
-  --surface-3:      #2d2927;
-  --text-primary:   #e8e4dd;
-  --text-secondary: #9c9588;
+  --surface-root:   #0b0a09;
+  --surface-1:      #141210;
+  --surface-2:      #1c1917;
+  --surface-3:      #25211e;
+  --text-primary:   #ede6dc;
+  --text-secondary: #a0988a;
   --text-muted:     #6b655b;
-  --accent:         #d9704a;
-  --accent-soft:    rgba(217, 112, 74, 0.18);
-  --accent-glow:    rgba(217, 112, 74, 0.08);
+  --accent:         #c9a96e;
+  --accent-soft:    rgba(201, 169, 110, 0.15);
+  --accent-glow:    rgba(201, 169, 110, 0.06);
+  --accent-secondary: #8fb996;
+  --surface-glass:  rgba(20, 18, 16, 0.7);
   --border:         #2a2724;
   --border-soft:    #1f1d1b;
   --danger:         #d95c5c;
   --success:        #5a9e6f;
-  --code-surface:   #141110;
+  --code-surface:   #100e0c;
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius:    14px;
@@ -47,8 +49,8 @@
   --text-md:   1.0625rem;
   --text-lg:   1.25rem;
   --text-xl:   1.625rem;
-  --text-2xl:  2.125rem;
-  --text-3xl:  2.75rem;
+  --text-2xl:  2.375rem;
+  --text-3xl:  3rem;
   --space-xs:  4px;
   --space-sm:  8px;
   --space-md:  12px;
@@ -64,6 +66,9 @@
   --safe-bottom: env(safe-area-inset-bottom, 16px);
   --header-h: 52px;
   --sidebar-w: 300px;
+  --font-display: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  --font-body: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
 }
 
 /* ============================================
@@ -75,8 +80,8 @@ html, body {
   height: 100%; width: 100%; overflow: hidden;
   background: var(--surface-root);
   color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: var(--text-base); line-height: 1.7; letter-spacing: 0.02em;
+  font-family: var(--font-body);
+  font-size: var(--text-base); line-height: 1.75; letter-spacing: 0.015em;
   -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
 }
@@ -86,8 +91,31 @@ html, body {
 
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb { background: var(--accent-soft); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ============================================
+   ATMOSPHERE — ambient glow + noise overlay
+   ============================================ */
+.ambient-glow {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 80%, rgba(201,169,110,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 80% at 80% 20%, rgba(143,185,150,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(201,169,110,0.02) 0%, transparent 70%);
+  animation: ambientShift 20s ease-in-out infinite alternate;
+}
+@keyframes ambientShift {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.noise-overlay {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
 
 /* ============================================
    APP SHELL — sidebar + main layout
@@ -109,7 +137,10 @@ html, body {
 
 .sidebar {
   position: fixed; top: 0; left: 0; bottom: 0; z-index: 51;
-  width: min(85vw, var(--sidebar-w)); background: var(--surface-1);
+  width: min(85vw, var(--sidebar-w));
+  background: rgba(20,18,16,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(201,169,110,0.06);
   display: flex; flex-direction: column;
   transform: translateX(-100%);
   transition: transform 0.3s var(--ease-in-out);
@@ -124,7 +155,7 @@ html, body {
   flex-shrink: 0;
 }
 .sidebar-header h2 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display);
   font-size: var(--text-md); font-weight: 500; letter-spacing: -0.01em;
 }
 
@@ -219,7 +250,7 @@ html, body {
 .profile-area:hover { background: var(--surface-2); }
 .profile-avatar {
   width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, #d9704a, #b84e2e);
+  background: linear-gradient(135deg, #c9a96e, #8fb996);
   display: flex; align-items: center; justify-content: center;
   color: #fff; font-weight: 600; font-size: 15px; flex-shrink: 0;
 }
@@ -250,7 +281,7 @@ html, body {
 .main-area::before {
   content: ''; position: fixed; top: -120px; left: 50%; transform: translateX(-50%);
   width: 500px; height: 300px;
-  background: radial-gradient(ellipse at center, rgba(217,112,74,0.06) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(201,169,110,0.06) 0%, transparent 70%);
   pointer-events: none; z-index: 0;
 }
 
@@ -266,7 +297,7 @@ html, body {
 .header-brand { display: flex; align-items: center; gap: 10px; }
 .logo-mark {
   width: 34px; height: 34px; border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #d9704a 0%, #b84e2e 100%);
+  background: linear-gradient(135deg, #c9a96e 0%, #a8884a 100%);
   display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
 }
 .logo-mark::after {
@@ -330,30 +361,36 @@ html, body {
 }
 @keyframes welcomeReveal { from { opacity: 0; } to { opacity: 1; } }
 .welcome-eyebrow {
-  font-family: 'JetBrains Mono', monospace; font-size: var(--text-xs);
+  font-family: var(--font-mono); font-size: var(--text-xs);
   text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent);
   margin-bottom: var(--space-lg); opacity: 0;
   animation: fadeInUp 0.5s 0.15s var(--ease-out) forwards;
 }
 .welcome-heading {
-  font-family: 'Playfair Display', Georgia, serif; font-size: var(--text-3xl);
-  font-weight: 500; line-height: 1.15; letter-spacing: -0.01em;
+  font-family: var(--font-display); font-size: var(--text-3xl);
+  font-weight: 500; line-height: 1.12; letter-spacing: -0.015em;
   color: var(--text-primary); margin-bottom: var(--space); opacity: 0;
   animation: fadeInUp 0.5s 0.25s var(--ease-out) forwards;
 }
-.welcome-heading em { font-style: italic; color: var(--accent); }
+.welcome-heading em {
+  font-style: italic; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), #e8d5a3);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .welcome-desc {
   font-size: var(--text-base); color: var(--text-secondary);
   line-height: 1.75; max-width: 38ch; opacity: 0;
   animation: fadeInUp 0.5s 0.35s var(--ease-out) forwards;
 }
 .welcome-prompts {
-  display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);
+  display: flex; flex-wrap: wrap; gap: var(--space-sm);
   margin-top: var(--space-xl); opacity: 0;
   animation: fadeInUp 0.5s 0.5s var(--ease-out) forwards;
 }
 .prompt-card {
-  position: relative; padding: var(--space) var(--space-md);
+  flex: 1; min-width: 140px; position: relative;
+  padding: var(--space) var(--space-md);
   border-radius: var(--radius); border: 1px solid var(--border-soft);
   background: var(--surface-1); cursor: pointer; overflow: hidden;
   transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
@@ -383,35 +420,39 @@ html, body {
    ============================================ */
 .message-row {
   display: flex; gap: var(--space-md); max-width: 100%;
-  animation: fadeInUp 0.3s var(--ease-out) both;
+  animation: messageIn 0.35s var(--ease-out) both;
+}
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .message-row.user { flex-direction: row-reverse; }
 .avatar {
   width: 32px; height: 32px; min-width: 32px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 600; font-family: var(--font-body);
 }
 .avatar--user { background: var(--surface-2); color: var(--text-muted); font-size: 13px; letter-spacing: 0; }
-.avatar--claude { background: linear-gradient(135deg, #d9704a, #b84e2e); color: #fff; font-size: 14px; }
+.avatar--claude { background: linear-gradient(135deg, #c9a96e, #a8884a); color: #fff; font-size: 14px; }
 .bubble {
   padding: var(--space-md) var(--space); border-radius: var(--radius-lg);
   font-size: var(--text-base); line-height: 1.75; letter-spacing: 0.015em;
   word-break: break-word; position: relative; max-width: 85%;
 }
-.bubble--user { background: var(--surface-2); border-bottom-right-radius: var(--radius-xs); }
-.bubble--assistant { background: transparent; border-bottom-left-radius: var(--radius-xs); padding-left: 0; }
+.bubble--user { background: linear-gradient(135deg, var(--surface-2), var(--surface-3)); border-bottom-right-radius: var(--radius-xs); }
+.bubble--assistant { background: transparent; border-bottom-left-radius: var(--radius-xs); padding-left: calc(var(--space) - 2px); border-left: 2px solid var(--accent-soft); }
 .message-meta {
   display: flex; align-items: center; gap: var(--space-sm); margin-top: 4px; padding: 0 4px;
 }
 .message-row.user .message-meta { justify-content: flex-end; }
 .message-time {
   font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.03em;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 /* Markdown inside bubbles */
 .bubble h1, .bubble h2, .bubble h3 {
-  font-family: 'Playfair Display', Georgia, serif; font-weight: 500;
+  font-family: var(--font-display); font-weight: 500;
   margin: var(--space) 0 var(--space-sm); letter-spacing: -0.01em; line-height: 1.3;
 }
 .bubble h1 { font-size: var(--text-xl); }
@@ -426,11 +467,18 @@ html, body {
   background: var(--code-surface); border-radius: var(--radius-sm);
   border-left: 2px solid var(--accent); padding: var(--space) var(--space-md);
   overflow-x: auto; margin: var(--space-md) 0;
-  font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem; line-height: 1.6; letter-spacing: 0;
+  position: relative;
+}
+.bubble pre::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: 0.5;
 }
 .bubble code {
-  font-family: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace;
+  font-family: var(--font-mono);
   font-size: 0.8125rem; letter-spacing: 0; background: var(--surface-2);
   padding: 2px 6px; border-radius: 4px;
 }
@@ -438,6 +486,8 @@ html, body {
 .bubble blockquote {
   border-left: 2px solid var(--accent); padding-left: var(--space);
   color: var(--text-secondary); margin: var(--space-md) 0; font-style: italic;
+  background: rgba(201,169,110,0.04); padding: var(--space-sm) var(--space);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
 }
 .bubble hr { border: none; border-top: 1px solid var(--border-soft); margin: var(--space-lg) 0; }
 
@@ -451,7 +501,7 @@ html, body {
   font-size: var(--text-xs); color: var(--text-muted); background: none;
   border: none; cursor: pointer; padding: 4px 8px; border-radius: var(--radius-xs);
   letter-spacing: 0.03em; transition: color var(--duration-fast), background var(--duration-fast);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-body);
 }
 .bubble-action:hover { color: var(--text-primary); background: var(--surface-1); }
 .bubble-action.danger:hover { color: var(--danger); }
@@ -486,12 +536,13 @@ html, body {
 .skill-pill {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 5px 12px; border-radius: var(--radius-full);
-  background: var(--accent-soft); color: var(--accent);
+  background: rgba(201,169,110,0.1); border: 1px solid rgba(201,169,110,0.15);
+  color: var(--accent);
   font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.02em;
   white-space: nowrap; cursor: pointer;
-  transition: background var(--duration-fast), color var(--duration-fast);
+  transition: background var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast);
 }
-.skill-pill:hover { background: rgba(217,112,74,0.28); }
+.skill-pill:hover { background: rgba(201,169,110,0.25); }
 .skill-pill-remove {
   width: 14px; height: 14px; display: flex; align-items: center; justify-content: center;
   border-radius: 50%; font-size: 10px; opacity: 0.6; transition: opacity var(--duration-fast);
@@ -503,11 +554,15 @@ html, body {
   width: 100%; min-height: 44px; max-height: 160px; padding: 10px 16px; padding-right: 44px;
   border: 1px solid var(--border); border-radius: var(--radius-full);
   background: var(--surface-1); color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: var(--text-base);
+  font-family: var(--font-body); font-size: var(--text-base);
   line-height: 1.6; letter-spacing: 0.015em; resize: none; outline: none;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
   transition: border-color var(--duration) var(--ease-out), box-shadow var(--duration) var(--ease-out);
 }
-.chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.chat-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow), inset 0 1px 3px rgba(0,0,0,0.2);
+}
 .chat-input::placeholder { color: var(--text-muted); }
 .input-attach-btn {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
@@ -520,14 +575,15 @@ html, body {
 
 .send-btn {
   width: 44px; height: 44px; min-width: 44px; min-height: 44px;
-  border-radius: 50%; border: none; background: var(--accent); color: #fff;
+  border-radius: 50%; border: none;
+  background: linear-gradient(135deg, #c9a96e, #a8884a); color: #fff;
   cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  transition: transform var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), opacity var(--duration-fast);
+  transition: transform var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), opacity var(--duration-fast), box-shadow var(--duration-fast);
 }
 .send-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.send-btn:hover { background: #e8855f; }
+.send-btn:hover { background: linear-gradient(135deg, #d9b97e, #b8985a); box-shadow: 0 4px 16px rgba(201,169,110,0.25); }
 .send-btn:active { transform: scale(0.93); }
-.send-btn:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; }
+.send-btn:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; opacity: 0.5; box-shadow: none; }
 .send-btn.stop-btn { background: var(--danger); animation: pulse-stop 1.2s infinite; }
 .send-btn.stop-btn svg { width: 16px; height: 16px; }
 @keyframes pulse-stop {
@@ -537,17 +593,19 @@ html, body {
 
 /* Code lang tag */
 .code-lang-tag {
-  display: inline-block; font-family: 'JetBrains Mono', monospace;
+  display: inline-block; font-family: var(--font-mono);
   font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--accent); margin-bottom: 2px; padding: 0 2px;
 }
 
 /* Markdown tables */
-.bubble table { border-collapse: collapse; width: 100%; margin: var(--space-md) 0; font-size: var(--text-sm); }
-.bubble th, .bubble td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+.bubble table { border-collapse: separate; border-spacing: 0; width: 100%; margin: var(--space-md) 0; font-size: var(--text-sm); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+.bubble th, .bubble td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; }
 .bubble th { background: var(--surface-2); font-weight: 600; color: var(--text-primary); }
-.bubble a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-.bubble a:hover { color: #e8855f; }
+.bubble td { background: var(--surface-root); }
+.bubble tr:last-child td { border-bottom: none; }
+.bubble a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; transition: color var(--duration-fast); }
+.bubble a:hover { color: #d9b97e; }
 
 /* ============================================
    RIGHT PANELS — slide-in
@@ -562,7 +620,9 @@ html, body {
 
 .slide-panel {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 41;
-  width: min(100vw, 380px); background: var(--surface-1);
+  width: min(100vw, 380px);
+  background: rgba(20,18,16,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform 0.3s var(--ease-in-out);
   box-shadow: -8px 0 32px rgba(0,0,0,0.3);
@@ -573,7 +633,7 @@ html, body {
   padding: var(--space) var(--space-lg); border-bottom: 1px solid var(--border-soft);
 }
 .panel-top h2 {
-  font-family: 'Playfair Display', Georgia, serif; font-size: var(--text-lg);
+  font-family: var(--font-display); font-size: var(--text-lg);
   font-weight: 500; letter-spacing: -0.01em;
 }
 .panel-body { flex: 1; overflow-y: auto; padding: var(--space-lg); }
@@ -598,7 +658,7 @@ html, body {
   border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
 }
 .field-input::placeholder { color: var(--text-muted); }
-.field-textarea { resize: vertical; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0; }
+.field-textarea { resize: vertical; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0; }
 .field-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b655b' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
 .btn-primary {
@@ -607,13 +667,13 @@ html, body {
   font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.02em;
   cursor: pointer; transition: background var(--duration-fast), transform var(--duration-fast);
 }
-.btn-primary:hover { background: #e8855f; }
+.btn-primary:hover { background: #d9b97e; }
 .btn-primary:active { transform: scale(0.98); }
 
 .btn-secondary {
   width: 100%; height: 44px; border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--surface-root); color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: var(--text-sm);
+  font-family: var(--font-body); font-size: var(--text-sm);
   font-weight: 500; letter-spacing: 0.02em; cursor: pointer;
   transition: background var(--duration-fast), border-color var(--duration-fast);
   margin-top: var(--space-sm);
@@ -622,7 +682,7 @@ html, body {
 .btn-danger {
   width: 100%; height: 44px; border: 1px solid var(--danger); border-radius: var(--radius-sm);
   background: transparent; color: var(--danger);
-  font-family: 'Plus Jakarta Sans', sans-serif; font-size: var(--text-sm);
+  font-family: var(--font-body); font-size: var(--text-sm);
   font-weight: 500; letter-spacing: 0.02em; cursor: pointer;
   transition: background var(--duration-fast); margin-top: var(--space-sm);
 }
@@ -674,39 +734,45 @@ html, body {
    ANNOUNCEMENT MODAL
    ============================================ */
 .announcement-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  z-index: 100; display: flex; align-items: center; justify-content: center;
-  padding: var(--space-lg); animation: fadeIn 0.3s var(--ease-out);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+  padding: var(--space-lg); padding-bottom: calc(var(--space-lg) + var(--safe-bottom));
+  animation: fadeIn 0.25s var(--ease-out);
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .announcement-card {
-  background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: var(--space-xl);
-  max-width: 420px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-  animation: slideUp 0.4s var(--ease-out);
+  background: rgba(20,18,16,0.95);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg); padding: var(--space-lg);
+  max-width: 300px; width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  animation: bounceUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes bounceUp { from { transform: translateY(40px) scale(0.92); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
 .announcement-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 12px; border-radius: var(--radius-full);
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: var(--radius-full);
   background: var(--accent-soft); color: var(--accent);
-  font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em;
-  text-transform: uppercase; margin-bottom: var(--space);
+  font-size: 0.625rem; font-weight: 600; letter-spacing: 0.04em;
+  text-transform: uppercase; margin-bottom: var(--space-sm);
 }
 .announcement-badge .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: dotPulse 1.5s infinite ease-in-out; }
 .announcement-title {
-  font-family: 'Playfair Display', Georgia, serif; font-size: var(--text-xl);
-  font-weight: 500; letter-spacing: -0.01em; margin-bottom: var(--space-sm);
+  font-family: var(--font-body); font-size: var(--text-md);
+  font-weight: 600; letter-spacing: 0.01em; margin-bottom: 4px; color: var(--text-primary);
 }
-.announcement-body { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.7; margin-bottom: var(--space-lg); }
-.announcement-body ul { padding-left: 1.5em; margin-top: var(--space-sm); }
-.announcement-body li { margin: 4px 0; }
+.announcement-body { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.65; margin-bottom: var(--space); }
+.announcement-body ul { padding-left: 1.2em; margin-top: var(--space-sm); }
+.announcement-body li { margin: 2px 0; font-size: var(--text-xs); }
 .announcement-body li strong { color: var(--text-primary); }
 .announcement-footer {
   display: flex; gap: var(--space-sm); align-items: center;
 }
-.announcement-footer .btn-primary { flex: 1; }
+.announcement-footer .btn-primary {
+  flex: 1; height: 36px; font-size: var(--text-xs);
+  border-radius: var(--radius-full); letter-spacing: 0.03em;
+}
 .announcement-footer .btn-text {
   background: none; border: none; color: var(--text-muted); cursor: pointer;
   font-family: inherit; font-size: var(--text-xs); padding: var(--space-sm);
@@ -718,9 +784,12 @@ html, body {
    TOAST
    ============================================ */
 .toast {
-  position: fixed; bottom: 100px; left: 50%;
-  transform: translateX(-50%) translateY(8px); padding: 10px 20px;
-  border-radius: var(--radius-full); background: var(--surface-3);
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-12px); padding: 10px 20px;
+  border-radius: var(--radius-full);
+  background: rgba(20,18,16,0.92);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(201,169,110,0.12);
   color: var(--text-primary); font-size: var(--text-sm); letter-spacing: 0.02em;
   z-index: 200; opacity: 0; visibility: hidden;
   transition: opacity var(--duration) var(--ease-out), transform var(--duration) var(--ease-out), visibility var(--duration);
@@ -756,6 +825,11 @@ html, body {
 /* Dark mode for select option */
 select option { background: var(--surface-1); color: var(--text-primary); }
 
+/* Show action buttons on touch devices */
+@media (hover: none) {
+  .conv-item-actions { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .chat-view { scroll-behavior: auto; }
@@ -763,6 +837,9 @@ select option { background: var(--surface-1); color: var(--text-primary); }
 </style>
 </head>
 <body>
+
+<div class="ambient-glow" aria-hidden="true"></div>
+<div class="noise-overlay" aria-hidden="true"></div>
 
 <div id="app">
   <!-- ===== LEFT SIDEBAR ===== -->
@@ -809,7 +886,7 @@ select option { background: var(--surface-1); color: var(--text-primary); }
         <div class="profile-avatar" id="profile-avatar-initial">U</div>
         <div class="profile-info">
           <div class="profile-name" id="profile-name">用户</div>
-          <div class="profile-role" id="profile-model-label">Sonnet 4.6</div>
+          <div class="profile-role" id="profile-model-label">API</div>
         </div>
         <div class="profile-arrow">
           <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -829,13 +906,16 @@ select option { background: var(--surface-1); color: var(--text-primary); }
         <div class="logo-mark" aria-hidden="true"></div>
         <div class="header-title-group">
           <span class="header-title" id="conv-title-display">Claude Mobile</span>
-          <span class="header-model" id="model-label">Sonnet 4.6</span>
+          <span class="header-model" id="model-label">API</span>
         </div>
       </div>
       <nav class="header-actions" aria-label="工具栏">
         <button class="icon-btn" id="btn-skills" aria-label="Skills" title="Skills">
           <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6"/><path d="M9 14h6"/></svg>
           <span class="badge hidden" id="skill-badge"></span>
+        </button>
+        <button class="icon-btn" id="btn-settings" aria-label="设置" title="设置">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
         <button class="icon-btn" id="btn-clear" aria-label="新建对话" title="新建对话">
           <svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M3 12h18"/></svg>
@@ -852,19 +932,19 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     <!-- Chat -->
     <main class="chat-view" id="chat-view" role="log" aria-label="对话">
       <section class="welcome" id="welcome-screen" aria-label="欢迎">
-        <p class="welcome-eyebrow">Anthropic Claude API</p>
+        <p class="welcome-eyebrow">AI Chat · 第三方 API</p>
         <h1 class="welcome-heading">你的随身<br><em>AI 伙伴</em></h1>
-        <p class="welcome-desc">支持多模型切换、导入 Skills、流式对话。<br>在设置中填入 API Key 即可开始。</p>
+        <p class="welcome-desc">支持 OpenAI 兼容接口、导入 Skills、流式对话。<br>在设置中填入第三方 API 信息即可开始。</p>
         <div class="welcome-prompts" id="welcome-prompts">
           <div class="prompt-card" data-prompt="帮我写一段 Python 代码，读取 CSV 文件并用 matplotlib 生成折线图">
             <div class="prompt-card-icon"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-            <div class="prompt-card-text">写 Python 绘图脚本</div>
+            <div class="prompt-card-text">写一个算法题解</div>
           </div>
           <div class="prompt-card" data-prompt="帮我润色这段文字，让它更专业流畅：">
             <div class="prompt-card-icon"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-            <div class="prompt-card-text">润色文字表达</div>
+            <div class="prompt-card-text">翻译一段英文</div>
           </div>
-          <div class="prompt-card" data-prompt="用简单的话解释什么是 REST API，并举一个实际例子">
+          <div class="prompt-card" data-prompt="解释什么是机器学习，并举一个实际例子">
             <div class="prompt-card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg></div>
             <div class="prompt-card-text">解释技术概念</div>
           </div>
@@ -910,54 +990,33 @@ select option { background: var(--surface-1); color: var(--text-primary); }
       <label class="field-label">显示名称</label>
       <input class="field-input" type="text" id="setting-display-name" placeholder="用户" autocomplete="off">
     </div>
-    <!-- API Key -->
-    <div class="field-group">
-      <label class="field-label" for="setting-api-key">Anthropic API Key</label>
-      <input class="field-input" type="password" id="setting-api-key" placeholder="sk-ant-api-…" autocomplete="off">
-    </div>
-    <!-- Model -->
-    <div class="field-group">
-      <label class="field-label" for="setting-model">默认模型</label>
-      <select class="field-select" id="setting-model">
-        <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — 推荐</option>
-        <option value="claude-opus-4-8">Claude Opus 4.8 — 最强</option>
-        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — 最快</option>
-        <option value="claude-fable-5">Claude Fable 5 — 最新</option>
-      </select>
-    </div>
+
     <!-- System prompt -->
     <div class="field-group">
       <label class="field-label" for="setting-system-prompt">系统提示词</label>
       <textarea class="field-textarea" id="setting-system-prompt" rows="4" placeholder="自定义系统提示词（可选）"></textarea>
     </div>
 
-    <!-- Third-party API section -->
+    <!-- API Settings -->
     <div class="field-group">
       <label class="field-label" style="display:flex;align-items:center;gap:8px;">
-        第三方 API
-        <span class="version-tag">NEW</span>
+        API 配置
       </label>
-      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-sm);">配置第三方 API 端点（兼容 OpenAI 格式）</p>
+      <p style="font-size:var(--text-xs);color:var(--text-muted);margin-bottom:var(--space-sm);">支持 OpenAI 兼容接口（如 OpenAI、DeepSeek、通义千问 等）</p>
     </div>
     <div class="field-group">
-      <label class="field-label" for="setting-third-api-key">第三方 API Key</label>
-      <input class="field-input" type="password" id="setting-third-api-key" placeholder="sk-…" autocomplete="off">
+      <label class="field-label" for="setting-third-api-key">API Key</label>
+      <input class="field-input" type="password" id="setting-third-api-key" placeholder="sk-71a153bf99a842209b908c8cce2f6da0" autocomplete="off">
     </div>
     <div class="field-group">
-      <label class="field-label" for="setting-third-api-base">第三方 API Base URL</label>
-      <input class="field-input" type="text" id="setting-third-api-base" placeholder="https://api.openai.com/v1" autocomplete="off">
+      <label class="field-label" for="setting-third-api-base">API Base URL</label>
+      <input class="field-input" type="text" id="setting-third-api-base" placeholder="https://api.deepseek.com/anthropic" autocomplete="off">
     </div>
     <div class="field-group">
-      <label class="field-label" for="setting-third-api-model">第三方模型 ID</label>
-      <input class="field-input" type="text" id="setting-third-api-model" placeholder="gpt-4o" autocomplete="off">
+      <label class="field-label" for="setting-third-api-model">模型 ID</label>
+      <input class="field-input" type="text" id="setting-third-api-model" placeholder="deepseek-v4-pro" autocomplete="off">
     </div>
-    <div class="field-group">
-      <label class="field-label" for="setting-api-mode">API 模式</label>
-      <select class="field-select" id="setting-api-mode">
-        <option value="anthropic">Anthropic（默认）</option>
-        <option value="third-party">第三方 API（OpenAI 兼容）</option>
-      </select>
-    </div>
+
 
     <button class="btn-primary" id="btn-save-settings">保存设置</button>
 
@@ -1010,7 +1069,7 @@ select option { background: var(--surface-1); color: var(--text-primary); }
         <li><strong>重命名对话</strong> — 双击标题即可编辑</li>
         <li><strong>回退对话</strong> — 点击重做按钮回到上一步</li>
         <li><strong>对话分组</strong> — 将对话归类整理</li>
-        <li><strong>第三方 API</strong> — 支持 OpenAI 兼容端点</li>
+        <li><strong>API 配置</strong> — 支持 OpenAI / DeepSeek / 通义千问 等兼容端点</li>
         <li><strong>个人信息</strong> — 左下角个人中心</li>
         <li><strong>内置 Skills</strong> — 预置 prompt-refine 等实用技能</li>
       </ul>
@@ -1031,14 +1090,13 @@ select option { background: var(--surface-1); color: var(--text-primary); }
 
   // ── State ────────────────────────────────────
   const state = {
-    apiKey:        localStorage.getItem('cmw_api_key') || '',
-    model:         localStorage.getItem('cmw_model') || 'claude-sonnet-4-6',
+
     systemPrompt:  localStorage.getItem('cmw_system_prompt') || '',
     displayName:   localStorage.getItem('cmw_display_name') || '用户',
-    apiMode:       localStorage.getItem('cmw_api_mode') || 'anthropic',
-    thirdApiKey:   localStorage.getItem('cmw_third_api_key') || '',
-    thirdApiBase:  localStorage.getItem('cmw_third_api_base') || '',
-    thirdApiModel: localStorage.getItem('cmw_third_api_model') || '',
+
+    thirdApiKey:   'sk-71a153bf99a842209b908c8cce2f6da0',
+    thirdApiBase:  'https://api.deepseek.com/anthropic',
+    thirdApiModel: 'deepseek-v4-pro',
     messages:      [],
     skills:        JSON.parse(localStorage.getItem('cmw_skills') || '[]'),
     activeSkills:  new Set(JSON.parse(localStorage.getItem('cmw_active_skills') || '[]')),
@@ -1052,20 +1110,58 @@ select option { background: var(--surface-1); color: var(--text-primary); }
 
   let abortController = null;
 
-  // ── Announcement ───────────────────────────────
-  const ANNOUNCEMENT_VERSION = '2.0.0';
-  function checkAnnouncement() {
-    const dismissed = localStorage.getItem('cmw_announcement_dismissed');
-    if (dismissed === ANNOUNCEMENT_VERSION || dismissed === 'never') return;
-    document.getElementById('announcement-overlay').classList.remove('hidden');
+  // ── Changelog System ───────────────────────────
+  function getChangelogVersion() {
+    return localStorage.getItem('cmw_changelog_seen') || '0.0.0';
+  }
+  function setChangelogVersion(v) {
+    localStorage.setItem('cmw_changelog_seen', v);
+  }
+  function checkChangelog() {
+    const seen = getChangelogVersion();
+    // Show changelog for new entries since last seen version
+    const unseen = CHANGELOG.filter(c => compareVersions(c.version, seen) > 0);
+    if (unseen.length === 0) return;
+    showChangelog(unseen);
+  }
+  function showChangelog(entries) {
+    const overlay = document.getElementById('announcement-overlay');
+    const title = document.getElementById('announcement-title');
+    const body = document.getElementById('announcement-body');
+    const badge = overlay.querySelector('.announcement-badge');
+
+    if (entries.length === 1) {
+      const e = entries[0];
+      badge.innerHTML = '🐣 <span class="dot"></span> 更新';
+      title.textContent = 'v' + e.version + ' · ' + e.title;
+      body.innerHTML = '<ul>' + e.items.map(i => '<li>' + escHtml(i) + '</li>').join('') + '</ul>';
+    } else {
+      badge.innerHTML = '🐣 <span class="dot"></span> 更新';
+      title.textContent = '最近的更新';
+      body.innerHTML = entries.map(e =>
+        '<p style="margin-bottom:4px;"><strong>v' + e.version + '</strong> — ' + e.title + '</p><ul>' + e.items.map(i => '<li>' + escHtml(i) + '</li>').join('') + '</ul>'
+      ).join('<hr style="border:none;border-top:1px solid var(--border-soft);margin:12px 0;">');
+    }
+
+    overlay.classList.remove('hidden');
+  }
+  function compareVersions(a, b) {
+    const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if ((pa[i]||0) > (pb[i]||0)) return 1;
+      if ((pa[i]||0) < (pb[i]||0)) return -1;
+    }
+    return 0;
   }
   document.getElementById('btn-dismiss-announcement').addEventListener('click', () => {
     document.getElementById('announcement-overlay').classList.add('hidden');
-    localStorage.setItem('cmw_announcement_dismissed', ANNOUNCEMENT_VERSION);
+    // Mark the latest version as seen
+    setChangelogVersion(CHANGELOG[0].version);
   });
   document.getElementById('btn-dont-show-again').addEventListener('click', () => {
     document.getElementById('announcement-overlay').classList.add('hidden');
-    localStorage.setItem('cmw_announcement_dismissed', 'never');
+    // Mark all current versions as seen
+    setChangelogVersion(CHANGELOG[0].version);
   });
 
   // ── Conversations ──────────────────────────────
@@ -1118,6 +1214,8 @@ select option { background: var(--surface-1); color: var(--text-primary); }
         convs[idx].updatedAt = now;
       }
     } else {
+      // Only create a new conversation if there are messages
+      if (state.messages.length === 0) return;
       const id = 'conv_' + now;
       convs.push({ id, title, messages: state.messages, totalTokens: state.totalTokens,
                    undoStack: state.undoStack, createdAt: now, updatedAt: now, groupId: null, customTitle: false });
@@ -1183,19 +1281,21 @@ select option { background: var(--surface-1); color: var(--text-primary); }
   }
 
   // ── Rename conversation ───────────────────────
+  // ── Rename conversation ───────────────────────
   function startRename(id) {
     const convs = loadConversations();
     const c = convs.find(c => c.id === id);
     if (!c) return;
-    const newTitle = prompt('重命名对话:', c.title).trim();
-    if (newTitle && newTitle !== c.title) {
-      c.title = newTitle;
-      c.customTitle = true;
-      saveConversations(convs);
-      if (id === state.currentConvId) updateConvTitleDisplay(newTitle);
-      renderConvList();
-      toast('已重命名');
-    }
+    const raw = prompt('重命名对话:', c.title);
+    if (raw === null) return;  // user cancelled
+    const newTitle = raw.trim();
+    if (!newTitle || newTitle === c.title) return;
+    c.title = newTitle;
+    c.customTitle = true;
+    saveConversations(convs);
+    if (id === state.currentConvId) updateConvTitleDisplay(newTitle);
+    renderConvList();
+    toast('已重命名');
   }
 
   function updateConvTitleDisplay(title) {
@@ -1209,7 +1309,9 @@ select option { background: var(--surface-1); color: var(--text-primary); }
       };
     } else {
       el.textContent = 'Claude Mobile';
+      el.title = '';
       el.style.cursor = 'default';
+      el.onclick = null;
     }
   }
 
@@ -1249,7 +1351,9 @@ select option { background: var(--surface-1); color: var(--text-primary); }
   }
 
   function createGroup() {
-    const name = prompt('分组名称:').trim();
+    const raw = prompt('分组名称:');
+    if (!raw) return;
+    const name = raw.trim();
     if (!name) return;
     const groups = loadGroups();
     if (groups.find(g => g.name === name)) { toast('分组已存在'); return; }
@@ -1323,11 +1427,10 @@ select option { background: var(--surface-1); color: var(--text-primary); }
 
   // ── Init ─────────────────────────────────────
   function init() {
-    $('#setting-api-key').value = state.apiKey;
-    $('#setting-model').value = state.model;
+
     $('#setting-system-prompt').value = state.systemPrompt;
     $('#setting-display-name').value = state.displayName;
-    $('#setting-api-mode').value = state.apiMode;
+
     $('#setting-third-api-key').value = state.thirdApiKey;
     $('#setting-third-api-base').value = state.thirdApiBase;
     $('#setting-third-api-model').value = state.thirdApiModel;
@@ -1344,19 +1447,11 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     renderGroupList();
     renderGroupTab();
     loadBuiltinSkills();
-    checkAnnouncement();
+    checkChangelog();
   }
 
   function updateModelLabel() {
-    const labels = {
-      'claude-opus-4-8':            'Opus 4.8',
-      'claude-sonnet-4-6':          'Sonnet 4.6',
-      'claude-haiku-4-5-20251001':  'Haiku 4.5',
-      'claude-fable-5':              'Fable 5'
-    };
-    const label = state.apiMode === 'third-party'
-      ? (state.thirdApiModel || '第三方 API')
-      : (labels[state.model] || state.model);
+    const label = state.thirdApiModel || 'API';
     $modelLabel.textContent = label;
     document.getElementById('profile-model-label').textContent = label;
   }
@@ -1405,11 +1500,28 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     const text = textOverride || $input.value.trim();
     if (!text || state.streaming) return;
 
-    const hasApiKey = state.apiMode === 'third-party'
-      ? !!state.thirdApiKey
-      : !!state.apiKey;
-
-    if (!hasApiKey) { toast('请先在设置中配置 API Key'); openSettings(); return; }
+    if (!state.thirdApiKey) {
+      // API Key optional — fall back to local echo mode
+      pushUndoSnapshot();
+      $welcome.style.display = 'none';
+      const userMsg = { role: 'user', content: text, time: Date.now() };
+      state.messages.push(userMsg);
+      renderMessage(userMsg);
+      $input.value = '';
+      $input.style.height = 'auto';
+      updateSendBtn();
+      saveCurrentConv();
+      scrollDown();
+      const echo = { role: 'assistant', content: '✨ 你还没有配置 API Key～\n\n在右上角 **设置** 中填入 API Key、Base URL 和模型 ID，我就可以真正回答啦。\n\n> 💡 支持 OpenAI / DeepSeek / 通义千问 等兼容接口', time: Date.now() };
+      state.messages.push(echo);
+      const el = renderMessage(echo);
+      updateBubble(el, echo.content);
+      state.streaming = false;
+      updateSendBtn();
+      saveCurrentConv();
+      scrollDown();
+      return;
+    }
 
     // Push undo snapshot before any change
     pushUndoSnapshot();
@@ -1444,14 +1556,10 @@ select option { background: var(--surface-1); color: var(--text-primary); }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: state.messages.slice(0, -1),
-          apiKey: state.apiKey,
-          model: state.model,
-          systemPrompt: state.systemPrompt,
-          skills: activeSkills,
-          apiMode: state.apiMode,
           thirdApiKey: state.thirdApiKey,
           thirdApiBase: state.thirdApiBase,
-          thirdApiModel: state.thirdApiModel
+          thirdApiModel: state.thirdApiModel,
+          skills: activeSkills,
         }),
         signal: abortController.signal
       });
@@ -1666,6 +1774,8 @@ select option { background: var(--surface-1); color: var(--text-primary); }
       $tokenBar.classList.remove('hidden');
       $tokenCount.textContent = state.totalTokens.toLocaleString();
     } else { $tokenBar.classList.add('hidden'); }
+    // Update the compact model label with active conv info
+    updateModelLabel();
   }
 
   // ── Toast ────────────────────────────────────
@@ -1716,10 +1826,7 @@ select option { background: var(--surface-1); color: var(--text-primary); }
   }
   function openSettings() {
     $('#setting-display-name').value = state.displayName;
-    $('#setting-api-key').value = state.apiKey;
-    $('#setting-model').value = state.model;
     $('#setting-system-prompt').value = state.systemPrompt;
-    $('#setting-api-mode').value = state.apiMode;
     $('#setting-third-api-key').value = state.thirdApiKey;
     $('#setting-third-api-base').value = state.thirdApiBase;
     $('#setting-third-api-model').value = state.thirdApiModel;
@@ -1771,11 +1878,11 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     el.innerHTML = groups.map(g => {
       const count = convs.filter(c => c.groupId === g.id).length;
       return `<div>
-        <div class="group-header" data-group-id="${g.id}" onclick="window._toggleGroup('${g.id}')">
+        <div class="group-header" data-group-id="${g.id}">
           <span class="group-arrow${g.collapsed ? '' : ' open'}"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
           <span class="group-name">${escHtml(g.name)}</span>
           <span class="group-count">${count}</span>
-          <button class="conv-item-btn danger" onclick="event.stopPropagation();window._deleteGroup('${g.id}')" title="删除分组" style="margin-left:8px;">
+          <button class="conv-item-btn danger" data-delete-group="${g.id}" title="删除分组" style="margin-left:8px;">
             <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -1800,8 +1907,25 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     renderGroupList();
   }
 
-  window._toggleGroup = function(id) { toggleGroupCollapse(id); };
-  window._deleteGroup = function(id) { deleteGroup(id); };
+  // Event delegation — handles group toggling & delete via data attributes
+  $('#group-list').addEventListener('click', e => {
+    // Toggle group collapse
+    const headerEl = e.target.closest('[data-group-id]');
+    if (headerEl && !e.target.closest('[data-delete-group]')) {
+      toggleGroupCollapse(headerEl.dataset.groupId);
+      return;
+    }
+    // Delete group
+    const delBtn = e.target.closest('[data-delete-group]');
+    if (delBtn) {
+      e.stopPropagation();
+      deleteGroup(delBtn.dataset.deleteGroup);
+      return;
+    }
+    // Switch to conversation
+    const item = e.target.closest('[data-id]');
+    if (item) { switchConversation(item.dataset.id); closeSidebar(); }
+  });
 
   // ── Skills ───────────────────────────────────
   function renderSkills() {
@@ -1810,14 +1934,16 @@ select option { background: var(--surface-1); color: var(--text-primary); }
       c.innerHTML = `<div class="empty-msg"><div class="empty-msg-icon">◇</div><p>暂无已导入的 Skill</p><p style="font-size:var(--text-xs);margin-top:4px;">从下方导入 SKILL.md 文件</p></div>`;
       return;
     }
-    c.innerHTML = state.skills.map(s => `
-      <div class="skill-card">
+    c.innerHTML = state.skills.map(s => {
+      const escName = escHtml(s.name);
+      return `<div class="skill-card">
         <div class="skill-card-info">
-          <div class="skill-card-name">${escHtml(s.name)}</div>
+          <div class="skill-card-name">${escName}</div>
           <div class="skill-card-desc">${escHtml(s.description || '无描述')}</div>
         </div>
-        <button class="toggle ${state.activeSkills.has(s.name)?'active':''}" data-name="${escHtml(s.name)}" onclick="window._toggleSkill('${escHtml(s.name)}')" aria-label="切换 ${escHtml(s.name)}" aria-pressed="${state.activeSkills.has(s.name)}"></button>
-      </div>`).join('');
+        <button class="toggle ${state.activeSkills.has(s.name)?'active':''}" data-name="${escHtml(s.name)}" aria-label="切换 ${escName}" aria-pressed="${state.activeSkills.has(s.name)}"></button>
+      </div>`;
+    }).join('');
   }
 
   function renderActiveSkills() {
@@ -1833,6 +1959,31 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     if (state.activeSkills.size > 0) { badge.classList.remove('hidden'); }
     else { badge.classList.add('hidden'); }
   }
+
+
+// ── Changelog ───────────────────────────────
+const CHANGELOG = [
+  { version: '2.1.0', date: '2026-07-02', title: 'Bug 修复 & 优化', items: [
+    '修复对话重命名/删除崩溃问题',
+    '修复对话移入分组的绑定错误',
+    '新增 header 设置入口齿轮按钮',
+    '新增版本化更新日志系统 🐣',
+    'API 改为仅第三方 OpenAI 兼容接口',
+    'mobile 触摸设备操作按钮始终可见',
+    '修复多处 prompt() 空指针崩溃',
+    '改進对话保存逻辑与空对话清理',
+  ]},
+  { version: '2.0.0', date: '<older>', title: '首次发布', items: [
+    '左侧边栏 — 对话历史与分组管理',
+    '重命名对话 — 点击标题即可编辑',
+    '回退对话 — 点击重做按钮/Ctrl+Z',
+    '对话分组 — 将对话归类整理',
+    '第三方 API — OpenAI 兼容端点',
+    '个人信息 — 设置显示名称',
+    '内置 Skills — 预置 prompt-refine 等实用技能',
+    '技能导入 — 支持拖拽或粘贴 SKILL.md',
+  ]},
+];
 
   window._toggleSkill = function(name) {
     if (state.activeSkills.has(name)) state.activeSkills.delete(name);
@@ -1968,28 +2119,18 @@ select option { background: var(--surface-1); color: var(--text-primary); }
     if (item) switchConversation(item.dataset.id);
   });
 
-  // Group children — delegate click
-  $('#group-list').addEventListener('click', e => {
-    const item = e.target.closest('[data-id]');
-    if (item) { switchConversation(item.dataset.id); closeSidebar(); }
-  });
+  // Group list events handled above in the combined delegation handler
 
   // Settings save
   $('#btn-save-settings').addEventListener('click', () => {
     state.displayName   = $('#setting-display-name').value.trim() || '用户';
-    state.apiKey        = $('#setting-api-key').value.trim();
-    state.model         = $('#setting-model').value;
     state.systemPrompt  = $('#setting-system-prompt').value.trim();
-    state.apiMode       = $('#setting-api-mode').value;
     state.thirdApiKey   = $('#setting-third-api-key').value.trim();
     state.thirdApiBase  = $('#setting-third-api-base').value.trim();
     state.thirdApiModel = $('#setting-third-api-model').value.trim();
 
-    localStorage.setItem('cmw_api_key', state.apiKey);
-    localStorage.setItem('cmw_model', state.model);
     localStorage.setItem('cmw_system_prompt', state.systemPrompt);
     localStorage.setItem('cmw_display_name', state.displayName);
-    localStorage.setItem('cmw_api_mode', state.apiMode);
     localStorage.setItem('cmw_third_api_key', state.thirdApiKey);
     localStorage.setItem('cmw_third_api_base', state.thirdApiBase);
     localStorage.setItem('cmw_third_api_model', state.thirdApiModel);

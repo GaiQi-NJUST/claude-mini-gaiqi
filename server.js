@@ -26,77 +26,163 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
 });
 
-// Chat — routes to Anthropic or third-party (OpenAI-compatible)
+// Chat — auto-detect API format from base URL
 app.post('/api/chat', async (req, res) => {
   try {
     const {
-      messages, apiKey, model, systemPrompt, skills,
-      apiMode, thirdApiKey, thirdApiBase, thirdApiModel
+      messages, skills,
+      thirdApiKey, thirdApiBase, thirdApiModel
     } = req.body;
 
-    if (apiMode === 'third-party') {
-      return handleThirdPartyChat(req, res);
-    }
-
-    // ── Anthropic API ──────────────────────────
-    if (!apiKey) {
+    if (!thirdApiKey) {
       return res.status(400).json({ error: '请提供 API Key' });
     }
+    if (!thirdApiBase) {
+      return res.status(400).json({ error: '请提供 API Base URL' });
+    }
 
-    // Build system prompt from loaded skills
-    let system = systemPrompt || '';
+    // DEBUG: log key to confirm what's being sent
+    console.log('>>> API Key received:', thirdApiKey.slice(0, 7) + '...' + thirdApiKey.slice(-4));
+    console.log('>>> API Base:', thirdApiBase);
+    console.log('>>> API Model:', thirdApiModel);
+
+    // Build system content from loaded skills
+    let systemContent = '';
     if (skills && skills.length > 0) {
       const skillsContext = skills
         .map(s => `<skill name="${s.name}">\n${s.content}\n</skill>`)
         .join('\n\n');
-      system = `${system}\n\n<loaded_skills>\n${skillsContext}\n</loaded_skills>\n\n---\n以上是你的可用技能。当用户指令匹配某技能时，严格按照该技能的指令执行。`;
+      systemContent = `<loaded_skills>\n${skillsContext}\n</loaded_skills>\n\n---\n以上是你的可用技能。当用户指令匹配某技能时，严格按照该技能的指令执行。`;
     }
 
-    const anthropic = new Anthropic({ apiKey });
+    // Auto-detect: /anthropic path → Anthropic Messages API, otherwise → OpenAI chat/completions
+    const isAnthropicFormat = thirdApiBase.includes('/anthropic');
 
-    // Convert to Anthropic format
-    const systemMessages = messages
-      .filter(m => m.role === 'system')
-      .map(m => ({ type: 'text', text: m.content }));
-
-    const allSystem = [
-      ...(system ? [{ type: 'text', text: system }] : []),
-      ...systemMessages,
-    ];
-
-    const conversationMessages = messages
-      .filter(m => m.role !== 'system')
-      .map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content,
-      }));
-
-    const stream = await anthropic.messages.stream({
-      model: model || 'claude-sonnet-4-6',
-      max_tokens: 4096,
-      system: allSystem.length > 0 ? allSystem : undefined,
-      messages: conversationMessages,
-    });
-
-    // Stream the response
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        res.write(`data: ${JSON.stringify({ type: 'text', text: event.delta.text })}\n\n`);
-      }
-    }
+    if (isAnthropicFormat) {
+      // ── Anthropic Messages API ──────────────
+      const anthropic = new Anthropic({
+        apiKey: thirdApiKey,
+        baseURL: thirdApiBase.replace(/\/+$/, ''),
+      });
 
-    // Get final message for token usage
-    const finalMessage = await stream.finalMessage();
-    const usage = finalMessage.usage;
-    res.write(`data: ${JSON.stringify({
-      type: 'done',
-      usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens },
-    })}\n\n`);
-    res.end();
+      const systemMessages = messages
+        .filter(m => m.role === 'system')
+        .map(m => ({ type: 'text', text: m.content }));
+
+      const allSystem = [
+        ...(systemContent ? [{ type: 'text', text: systemContent }] : []),
+        ...systemMessages,
+      ];
+
+      const conversationMessages = messages
+        .filter(m => m.role !== 'system')
+        .map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content,
+        }));
+
+      const stream = await anthropic.messages.stream({
+        model: thirdApiModel || 'claude-sonnet-4-6',
+        max_tokens: 4096,
+        system: allSystem.length > 0 ? allSystem : undefined,
+        messages: conversationMessages,
+      });
+
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          res.write(`data: ${JSON.stringify({ type: 'text', text: event.delta.text })}\n\n`);
+        }
+      }
+
+      const finalMessage = await stream.finalMessage();
+      const usage = finalMessage.usage;
+      res.write(`data: ${JSON.stringify({
+        type: 'done',
+        usage: { input_tokens: usage.input_tokens, output_tokens: usage.output_tokens },
+      })}\n\n`);
+      res.end();
+
+    } else {
+      // ── OpenAI chat/completions ─────────────
+      const openaiMessages = [];
+      if (systemContent) {
+        openaiMessages.push({ role: 'system', content: systemContent });
+      }
+      messages
+        .filter(m => m.role !== 'system')
+        .forEach(m => {
+          openaiMessages.push({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.content,
+          });
+        });
+
+      const apiUrl = thirdApiBase.replace(/\/+$/, '') + '/chat/completions';
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${thirdApiKey}`,
+        },
+        body: JSON.stringify({
+          model: thirdApiModel || 'gpt-4o',
+          messages: openaiMessages,
+          stream: true,
+          max_tokens: 4096,
+        }),
+        signal: req.signal,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`API 错误 (${response.status}): ${errText}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let totalInputTokens = 0;
+      let totalOutputTokens = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          const dataStr = trimmed.slice(6);
+          if (dataStr === '[DONE]') continue;
+
+          try {
+            const data = JSON.parse(dataStr);
+            const choice = data.choices?.[0];
+            if (choice?.delta?.content) {
+              res.write(`data: ${JSON.stringify({ type: 'text', text: choice.delta.content })}\n\n`);
+            }
+            if (data.usage) {
+              totalInputTokens = data.usage.prompt_tokens || 0;
+              totalOutputTokens = data.usage.completion_tokens || 0;
+            }
+          } catch (_) {}
+        }
+      }
+
+      res.write(`data: ${JSON.stringify({
+        type: 'done',
+        usage: { input_tokens: totalInputTokens, output_tokens: totalOutputTokens },
+      })}\n\n`);
+      res.end();
+    }
 
   } catch (error) {
     console.error('Chat error:', error);
@@ -109,130 +195,14 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// ── Third-party (OpenAI-compatible) chat ────────
-async function handleThirdPartyChat(req, res) {
-  const {
-    messages, skills,
-    thirdApiKey, thirdApiBase, thirdApiModel
-  } = req.body;
-
-  if (!thirdApiKey) {
-    return res.status(400).json({ error: '请提供第三方 API Key' });
-  }
-  if (!thirdApiBase) {
-    return res.status(400).json({ error: '请提供第三方 API Base URL' });
-  }
-
-  // Build system content
-  let systemContent = '';
-  if (skills && skills.length > 0) {
-    const skillsContext = skills
-      .map(s => `<skill name="${s.name}">\n${s.content}\n</skill>`)
-      .join('\n\n');
-    systemContent = `\n\n<loaded_skills>\n${skillsContext}\n</loaded_skills>\n\n---\n以上是你的可用技能。当用户指令匹配某技能时，严格按照该技能的指令执行。`;
-  }
-
-  // Build OpenAI-format messages
-  const openaiMessages = [];
-  if (systemContent) {
-    openaiMessages.push({ role: 'system', content: systemContent });
-  }
-  messages
-    .filter(m => m.role !== 'system')
-    .forEach(m => {
-      openaiMessages.push({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content,
-      });
-    });
-
-  const apiUrl = thirdApiBase.replace(/\/+$/, '') + '/chat/completions';
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${thirdApiKey}`,
-      },
-      body: JSON.stringify({
-        model: thirdApiModel || 'gpt-4o',
-        messages: openaiMessages,
-        stream: true,
-        max_tokens: 4096,
-      }),
-      signal: req.signal,
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`第三方 API 错误 (${response.status}): ${errText}`);
-    }
-
-    // Stream the response
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data: ')) continue;
-        const dataStr = trimmed.slice(6);
-        if (dataStr === '[DONE]') continue;
-
-        try {
-          const data = JSON.parse(dataStr);
-          const choice = data.choices?.[0];
-          if (choice?.delta?.content) {
-            res.write(`data: ${JSON.stringify({ type: 'text', text: choice.delta.content })}\n\n`);
-          }
-          if (data.usage) {
-            totalInputTokens = data.usage.prompt_tokens || 0;
-            totalOutputTokens = data.usage.completion_tokens || 0;
-          }
-        } catch (_) {}
-      }
-    }
-
-    res.write(`data: ${JSON.stringify({
-      type: 'done',
-      usage: { input_tokens: totalInputTokens, output_tokens: totalOutputTokens },
-    })}\n\n`);
-    res.end();
-
-  } catch (error) {
-    console.error('Third-party chat error:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
-      res.end();
-    }
-  }
-}
-
 // List available models
 app.get('/api/models', (req, res) => {
   res.json({
     models: [
-      { id: 'claude-opus-4-8', name: 'Claude Opus 4.8', description: '最强大，适合复杂任务' },
-      { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', description: '平衡性能与速度' },
-      { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5', description: '最快，适合简单任务' },
-      { id: 'claude-fable-5', name: 'Claude Fable 5', description: '最新模型' },
+      { id: 'gpt-4o', name: 'GPT-4o (OpenAI)', description: 'OpenAI 最新模型' },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: '轻量快速' },
+      { id: 'deepseek-chat', name: 'DeepSeek V3', description: 'DeepSeek 对话模型' },
+      { id: 'qwen-plus', name: '通义千问 Plus', description: '阿里云通义千问' },
     ],
   });
 });
@@ -381,9 +351,9 @@ app.post('/api/skills/import-directory', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🤖 Claude Mobile Web running at http://localhost:${PORT}`);
-  console.log(`📱 Open in your browser or phone to use`);
-  console.log(`🔑 Set your API key in Settings (profile → settings)`);
+  console.log(`🤖 AI Chat Mobile running at http://localhost:${PORT}`);
+  console.log(`📱 Open in your browser to use`);
+  console.log(`🔑 Configure third-party API in Settings`);
   console.log(`📂 Import skills via the skills panel`);
   console.log(`📦 Built-in skills: ${fs.existsSync(path.join(__dirname, 'skills')) ? fs.readdirSync(path.join(__dirname, 'skills')).filter(f => f.endsWith('.md')).length : 0} loaded`);
 });
